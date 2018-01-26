@@ -2,11 +2,42 @@ pragma solidity ^0.4.18;
 
 import "./ERC721.sol";
 
+contract ERC20Interface {
+    // Get the total token supply
+    function totalSupply() public constant returns (uint256 _totalSupply);
+ 
+    // Get the account balance of another account with address _owner
+    function balanceOf(address _owner) public constant returns (uint256 balance);
+ 
+    // Send _value amount of tokens to address _to
+    function transfer(address _to, uint256 _value) public returns (bool success);
+    
+    // transfer _value amount of token approved by address _from
+    function transferFrom(address _from, address _to, uint256 _value) public returns (bool success);
+    
+    // approve an address with _value amount of tokens
+    function approve(address _spender, uint256 _value) public returns (bool success);
+
+    // get remaining token approved by _owner to _spender
+    function allowance(address _owner, address _spender) public constant returns (uint256 remaining);
+  
+    // Triggered when tokens are transferred.
+    event Transfer(address indexed _from, address indexed _to, uint256 _value);
+ 
+    // Triggered whenever approve(address _spender, uint256 _value) is called.
+    event Approval(address indexed _owner, address indexed _spender, uint256 _value);
+}
+
 contract MyNFT is ERC721 {
+    
+    // load Gifto to Virtual Gift contract, to interact with gifto
+    ERC20Interface Gifto = ERC20Interface(0x00B2a1194Bf9758B41931512FF4706A592AC660483);
     
     // token data
     struct Token {
+        // gift price
         uint256 integer;
+        // gift description
         string charater;
     }
     
@@ -66,6 +97,23 @@ contract MyNFT is ERC721 {
         _transfer(0, msg.sender, mythicalToken);
     }
     
+    /// @dev this function change gifto address, this mean you can use many token to buy gif
+    /// by change gifto address to BNB or TRON address
+    /// @param newAddress is new address of gifto or another token like BNB
+    function changeGiftoAddress(address newAddress)
+    public
+    onlyOwner{
+        Gifto = ERC20Interface(newAddress);
+    }
+    
+    /// @dev return current gifto address
+    function getGiftoAddress()
+    public
+    constant
+    returns (address gifto) {
+        return address(Gifto);
+    }
+    
     /// @dev return total supply of token
     /// @return length of token storage array, except token Zero
     function totalSupply()
@@ -74,6 +122,20 @@ contract MyNFT is ERC721 {
     returns (uint256){
         // exclusive token Zero
         return token.length - 1;
+    }
+    
+    /// @dev allow people to buy token
+    function buy(uint256 tokenId) 
+    public {
+        // get old owner of token
+        address oldowner = tokenIndexToOwners[tokenId];
+        // tell gifto transfer GTO from new owner to oldowner
+        // NOTE: new owner MUST approve for Virtual Gift contract to take his balance
+        if(Gifto.transferFrom(msg.sender, oldowner, token[tokenId].integer) == true){
+            // assign new owner for tokenId
+            // TODO: old owner should have something to confirm that he want to sell this token
+            _transfer(oldowner, msg.sender, tokenId);
+        }
     }
     
     /// @dev get total token of an address
@@ -133,16 +195,15 @@ contract MyNFT is ERC721 {
         address newOwner = msg.sender;
         
         require(newOwner != oldOwner);
-        // newOwner must be allowed by oldOwner
+        // newOwner must be approved by oldOwner
         require(allowed[oldOwner][newOwner] == _tokenId);
-        // decrese balance of old owner
-        balances[oldOwner] -= 1;
-        // change owner ship to new Owner
-        tokenIndexToOwners[_tokenId] = newOwner;
+
+        // transfer token for new owner
+        _transfer(oldOwner, newOwner, _tokenId);
+
         // delete approve when being done take owner ship
         delete allowed[oldOwner][newOwner];
-        // increase balance of new owner
-        balances[newOwner] += 1;
+
         Transfer(oldOwner, newOwner, _tokenId);
     }
     
@@ -270,7 +331,7 @@ contract MyNFT is ERC721 {
     public
     onlyOwner
     returns (uint256) {
-        // save temporaryly new token
+        // save temporarily new token
         Token memory newToken = Token({
             integer: _integer,
             charater: _charater
@@ -298,5 +359,23 @@ contract MyNFT is ERC721 {
     returns (uint256, string){
         Token memory newToken = token[tokenId];
         return (newToken.integer, newToken.charater);
+    }
+    
+    
+    function updateToken(uint256 tokenId, uint256 _integer, string _charater)
+    public
+    onlyOwner {
+        // check token exist First
+        require(tokenExists[tokenId]);
+        // setting new properties
+        token[tokenId].integer = _integer;
+        token[tokenId].charater = _charater;
+    }
+    
+    function removeToken(uint256 tokenId)
+    public
+    onlyOwner {
+        // just setting tokenExists equal to false
+        tokenExists[tokenId] = false;
     }
 }
