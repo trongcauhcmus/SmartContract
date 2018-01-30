@@ -3,10 +3,10 @@ pragma solidity ^0.4.18;
 import "./ERC721.sol";
 import "./ERC20.sol";
 
-contract MyNFT is ERC721 {
+contract VirtualGift is ERC721 {
     
-    // load Gifto to Virtual Gift contract, to interact with gifto
-    ERC20 Gifto = ERC20(0x00B2a1194Bf9758B41931512FF4706A592AC660483);
+    // load GTO to Virtual Gift contract, to interact with GTO
+    ERC20 GTO = ERC20(0x00B2a1194Bf9758B41931512FF4706A592AC660483);
     
     // Gift data
     struct Gift {
@@ -17,17 +17,13 @@ contract MyNFT is ERC721 {
     }
     
     address owner;
-    modifier onlyOwner(){
-         require(msg.sender == owner);
-         _;
-     }
     
     event Transfer(address indexed _from, address indexed _to, uint256 _GiftId);
     event Approval(address indexed _owner, address indexed _approved, uint256 _GiftId);
     event Creation(address indexed _owner, uint256 indexed GiftId);
     
-    string public constant name = "MyNFT";
-    string public constant symbol = "NFT";
+    string public constant name = "VirtualGift";
+    string public constant symbol = "VTG";
     
     // Gift object storage in array
     Gift[] giftStorage;
@@ -50,8 +46,23 @@ contract MyNFT is ERC721 {
     // Gift metadata
     mapping(uint256 => string) GiftLinks;
 
+    modifier onlyOwner(){
+         require(msg.sender == owner);
+         _;
+    }
+
+    modifier onlyGiftOwner(uint256 GiftId){
+        require(msg.sender == GiftIndexToOwners[GiftId]);
+        _;
+    }
+    
+    modifier validGift(uint256 GiftId){
+        require(GiftExists[GiftId]);
+        _;
+    }
+
     /// @dev constructor
-    function MyNFT()
+    function VirtualGift()
     public{
         owner = msg.sender;
         // save temporaryly new Gift
@@ -71,21 +82,21 @@ contract MyNFT is ERC721 {
         _transfer(0, msg.sender, mythicalGift);
     }
     
-    /// @dev this function change gifto address, this mean you can use many token to buy gift
-    /// by change gifto address to BNB or TRON address
-    /// @param newAddress is new address of gifto or another Gift like BNB
-    function changeGiftoAddress(address newAddress)
+    /// @dev this function change GTO address, this mean you can use many token to buy gift
+    /// by change GTO address to BNB or TRON address
+    /// @param newAddress is new address of GTO or another Gift like BNB
+    function changeGTOAddress(address newAddress)
     public
     onlyOwner{
-        Gifto = ERC20(newAddress);
+        GTO = ERC20(newAddress);
     }
     
-    /// @dev return current gifto address
-    function getGiftoAddress()
+    /// @dev return current GTO address
+    function getGTOAddress()
     public
     constant
-    returns (address gifto) {
-        return address(Gifto);
+    returns (address) {
+        return address(GTO);
     }
     
     /// @dev return total supply of Gift
@@ -99,17 +110,31 @@ contract MyNFT is ERC721 {
     }
     
     /// @dev allow people to buy Gift
+    /// @param GiftId : id of gift user want to buy
     function buy(uint256 GiftId) 
+    validGift(GiftId)
     public {
         // get old owner of Gift
         address oldowner = GiftIndexToOwners[GiftId];
         // tell gifto transfer GTO from new owner to oldowner
         // NOTE: new owner MUST approve for Virtual Gift contract to take his balance
-        if(Gifto.transferFrom(msg.sender, oldowner, giftStorage[GiftId].price) == true){
-            // assign new owner for GiftId
-            // TODO: old owner should have something to confirm that he want to sell this Gift
-            _transfer(oldowner, msg.sender, GiftId);
-        }
+        require(GTO.transferFrom(msg.sender, oldowner, giftStorage[GiftId].price) == true);
+        // assign new owner for GiftId
+        // TODO: old owner should have something to confirm that he want to sell this Gift
+        _transfer(oldowner, msg.sender, GiftId);
+    }
+    
+    /// @dev owner send gift to recipient when VG was approved
+    /// @param recipient : received gift
+    /// @param GiftId : id of gift which recipient want to buy
+    function sendGift(address recipient, uint256 GiftId)
+    onlyGiftOwner(GiftId)
+    validGift(GiftId)
+    public {
+        // transfer GTO to owner, revert if VG can't take recipient balance send to owner
+        require(GTO.transferFrom(recipient, msg.sender, giftStorage[GiftId].price) == true);
+        // transfer gift to recipient
+        _transfer(msg.sender, recipient, GiftId);
     }
     
     /// @dev get total Gift of an address
@@ -279,7 +304,7 @@ contract MyNFT is ERC721 {
     ///  expensive (it walks the entire Gift array looking for Gift belonging to owner),
     ///  it is only supported for web3 calls, and
     ///  not contract-to-contract calls.
-    function GiftOfOwnerByIndex(address _owner, uint256 _index)
+    function giftOwnerByIndex(address _owner, uint256 _index)
     external
     constant 
     returns (uint256 GiftId) {
@@ -335,8 +360,12 @@ contract MyNFT is ERC721 {
         return (newGift.price, newGift.description);
     }
     
-    
-    function updateGift(uint256 GiftId, uint256 _price, string _description)
+    /// @dev change gift properties
+    /// @param GiftId : to change
+    /// @param _price : new price of gift
+    /// @param _description : new description
+    /// @param _giftUrl : new url 
+    function updateGift(uint256 GiftId, uint256 _price, string _description, string _giftUrl)
     public
     onlyOwner {
         // check Gift exist First
@@ -344,12 +373,23 @@ contract MyNFT is ERC721 {
         // setting new properties
         giftStorage[GiftId].price = _price;
         giftStorage[GiftId].description = _description;
+        GiftLinks[GiftId] = _giftUrl;
     }
     
+    /// @dev remove gift 
+    /// @param GiftId : gift id to remove
     function removeGift(uint256 GiftId)
     public
     onlyOwner {
         // just setting GiftExists equal to false
         GiftExists[GiftId] = false;
     }
-}
+    
+    /// @dev withdraw GTO in this contract
+    function withdrawGTO()
+    onlyOwner
+    public {
+        GTO.transfer(owner, GTO.balanceOf(address(this)));
+    }
+    
+} 
