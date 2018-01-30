@@ -74,6 +74,8 @@ contract VirtualGift is ERC721 {
         uint256 mythicalGift = giftStorage.push(newGift) - 1; // id = 0
         // mythical Gift is not exist
         GiftExists[mythicalGift] = false;
+        // assign url for Gift
+        GiftLinks[mythicalGift] = "mythicalGift";
         // event create new Gift for msg.sender
         Creation(msg.sender, mythicalGift);
         
@@ -147,6 +149,13 @@ contract VirtualGift is ERC721 {
         return balances[_owner];
     }
     
+    function isExist(uint256 GiftId)
+    public
+    constant
+    returns(bool){
+        return GiftExists[GiftId];
+    }
+    
     /// @dev get owner of an Gift id
     /// @param _GiftId : id of Gift to get owner
     /// @return owner : owner of an Gift id
@@ -162,6 +171,7 @@ contract VirtualGift is ERC721 {
     /// @param _to : address is approved
     /// @param _GiftId : id of Gift in array
     function approve(address _to, uint256 _GiftId)
+    validGift(_GiftId)
     public {
         require(msg.sender == ownerOf(_GiftId));
         require(msg.sender != _to);
@@ -184,10 +194,8 @@ contract VirtualGift is ERC721 {
     /// @dev a spender take owner ship of Gift id, when he was approved
     /// @param _GiftId : id of Gift has being takeOwnership
     function takeOwnership(uint256 _GiftId)
+    validGift(_GiftId)
     public {
-        // check existen
-        require(GiftExists[_GiftId]);
-        
         // get oldowner of Giftid
         address oldOwner = ownerOf(_GiftId);
         // new owner is msg sender
@@ -228,9 +236,8 @@ contract VirtualGift is ERC721 {
     /// @param _to : address's received
     /// @param _GiftId : Gift id
     function transfer(address _to, uint256 _GiftId)
+    validGift(_GiftId)
     external {
-        // check existen
-        require(GiftExists[_GiftId]);
         // not transfer to zero
         require(_to != 0x0);
         // address received different from sender
@@ -248,15 +255,19 @@ contract VirtualGift is ERC721 {
     /// @param _to : address is received
     /// @param _GiftId : Gift id
     function transferFrom(address _from, address _to, uint256 _GiftId)
+    validGift(_GiftId)
     external {
+        require(_from == ownerOf(_GiftId));
+        // Check for approval and valid ownership
+        require(allowance(_from, msg.sender) == _GiftId);
+        // address received different from _owner
+        require(_from != _to);
+        
         // Safety check to prevent against an unexpected 0x0 default.
         require(_to != address(0));
         // Disallow transfers to this contract to prevent accidental misuse.
         // The contract should never own any Gift
         require(_to != address(this));
-        // Check for approval and valid ownership
-        require(allowance(_from, _to) == _GiftId);
-        require(_from == ownerOf(_GiftId));
 
         // Reassign ownership (also clears pending approvals and emits Transfer event).
         _transfer(_from, _to, _GiftId);
@@ -326,7 +337,7 @@ contract VirtualGift is ERC721 {
     /// @param _price : Gift property
     /// @param _description : Gift property
     /// @return GiftId
-    function createGift(uint256 _price, string _description)
+    function createGift(uint256 _price, string _description, string _url)
     public
     onlyOwner
     returns (uint256) {
@@ -339,6 +350,8 @@ contract VirtualGift is ERC721 {
         uint256 newGiftId = giftStorage.push(newGift) - 1;
         // turn on existen
         GiftExists[newGiftId] = true;
+        // assin gift url
+        GiftLinks[newGiftId] = _url;
         // event create new Gift for msg.sender
         Creation(msg.sender, newGiftId);
         
