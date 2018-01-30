@@ -16,7 +16,7 @@ contract VirtualGift is ERC721 {
         string description;
     }
     
-    address owner;
+    address public owner;
     
     event Transfer(address indexed _from, address indexed _to, uint256 _GiftId);
     event Approval(address indexed _owner, address indexed _approved, uint256 _GiftId);
@@ -76,12 +76,11 @@ contract VirtualGift is ERC721 {
         GiftExists[mythicalGift] = false;
         // assign url for Gift
         GiftLinks[mythicalGift] = "mythicalGift";
-        // event create new Gift for msg.sender
-        Creation(msg.sender, mythicalGift);
-        
         // This will assign ownership, and also emit the Transfer event as
         // per ERC721 draft
         _transfer(0, msg.sender, mythicalGift);
+        // event create new Gift for msg.sender
+        Creation(msg.sender, mythicalGift);
     }
     
     /// @dev this function change GTO address, this mean you can use many token to buy gift
@@ -133,8 +132,8 @@ contract VirtualGift is ERC721 {
     onlyGiftOwner(GiftId)
     validGift(GiftId)
     public {
-        // transfer GTO to owner, revert if VG can't take recipient balance send to owner
-        require(GTO.transferFrom(recipient, msg.sender, giftStorage[GiftId].price) == true);
+        // transfer GTO to owner
+        require(GTO.transfer(msg.sender, giftStorage[GiftId].price) == true);
         // transfer gift to recipient
         _transfer(msg.sender, recipient, GiftId);
     }
@@ -220,11 +219,11 @@ contract VirtualGift is ERC721 {
     /// @param _GiftId : Gift id
     function _transfer(address _from, address _to, uint256 _GiftId) 
     internal {
-        // Since the number of kittens is capped to 2^32 we can't overflow this
+        // Since the number of Gift is capped to 2^32 we can't overflow this
         balances[_to]++;
         // transfer ownership
         GiftIndexToOwners[_GiftId] = _to;
-        // When creating new kittens _from is 0x0, but we can't account that address.
+        // When creating new Gift _from is 0x0, but we can't account that address.
         if (_from != address(0)) {
             balances[_from]--;
         }
