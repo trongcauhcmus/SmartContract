@@ -85,7 +85,7 @@ contract VirtualGift is ERC721 {
     }
     
     /// @dev this function change GTO address, this mean you can use many token to buy gift
-    /// by change GTO address to BNB or TRON address
+    /// by change GTO address to BNB address
     /// @param newAddress is new address of GTO or another Gift like BNB
     function changeGTOAddress(address newAddress)
     public
@@ -117,7 +117,7 @@ contract VirtualGift is ERC721 {
     validGift(GiftId)
     public {
         // get old owner of Gift
-        address oldowner = GiftIndexToOwners[GiftId];
+        address oldowner = ownerOf(GiftId);
         // tell gifto transfer GTO from new owner to oldowner
         // NOTE: new owner MUST approve for Virtual Gift contract to take his balance
         require(GTO.transferFrom(msg.sender, oldowner, giftStorage[GiftId].price) == true);
@@ -369,6 +369,9 @@ contract VirtualGift is ERC721 {
     public
     constant 
     returns (uint256, string){
+        if(GiftId > giftStorage.length){
+            return (0, "");
+        }
         Gift memory newGift = giftStorage[GiftId];
         return (newGift.price, newGift.description);
     }
