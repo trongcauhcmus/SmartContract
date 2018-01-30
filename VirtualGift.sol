@@ -11,9 +11,9 @@ contract MyNFT is ERC721 {
     // Gift data
     struct Gift {
         // gift price
-        uint256 integer;
+        uint256 price;
         // gift description
-        string charater;
+        string description;
     }
     
     address owner;
@@ -56,8 +56,8 @@ contract MyNFT is ERC721 {
         owner = msg.sender;
         // save temporaryly new Gift
         Gift memory newGift = Gift({
-            integer: 0,
-            charater: "MYTHICAL"
+            price: 0,
+            description: "MYTHICAL"
         });
         // push to array and return the length is the id of new Gift
         uint256 mythicalGift = giftStorage.push(newGift) - 1; // id = 0
@@ -105,7 +105,7 @@ contract MyNFT is ERC721 {
         address oldowner = GiftIndexToOwners[GiftId];
         // tell gifto transfer GTO from new owner to oldowner
         // NOTE: new owner MUST approve for Virtual Gift contract to take his balance
-        if(Gifto.transferFrom(msg.sender, oldowner, giftStorage[GiftId].integer) == true){
+        if(Gifto.transferFrom(msg.sender, oldowner, giftStorage[GiftId].price) == true){
             // assign new owner for GiftId
             // TODO: old owner should have something to confirm that he want to sell this Gift
             _transfer(oldowner, msg.sender, GiftId);
@@ -298,17 +298,17 @@ contract MyNFT is ERC721 {
     }
     
     /// @dev function create new Gift
-    /// @param _integer : Gift property
-    /// @param _charater : Gift property
+    /// @param _price : Gift property
+    /// @param _description : Gift property
     /// @return GiftId
-    function createGift(uint256 _integer, string _charater)
+    function createGift(uint256 _price, string _description)
     public
     onlyOwner
     returns (uint256) {
         // save temporarily new Gift
         Gift memory newGift = Gift({
-            integer: _integer,
-            charater: _charater
+            price: _price,
+            description: _description
         });
         // push to array and return the length is the id of new Gift
         uint256 newGiftId = giftStorage.push(newGift) - 1;
@@ -332,18 +332,18 @@ contract MyNFT is ERC721 {
     constant 
     returns (uint256, string){
         Gift memory newGift = giftStorage[GiftId];
-        return (newGift.integer, newGift.charater);
+        return (newGift.price, newGift.description);
     }
     
     
-    function updateGift(uint256 GiftId, uint256 _integer, string _charater)
+    function updateGift(uint256 GiftId, uint256 _price, string _description)
     public
     onlyOwner {
         // check Gift exist First
         require(GiftExists[GiftId]);
         // setting new properties
-        giftStorage[GiftId].integer = _integer;
-        giftStorage[GiftId].charater = _charater;
+        giftStorage[GiftId].price = _price;
+        giftStorage[GiftId].description = _description;
     }
     
     function removeGift(uint256 GiftId)
