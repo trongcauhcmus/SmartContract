@@ -133,7 +133,7 @@ contract VirtualGift is ERC721 {
     validGift(GiftId)
     public {
         // transfer GTO to owner
-        require(GTO.transfer(msg.sender, giftStorage[GiftId].price) == true);
+        // require(GTO.transfer(msg.sender, giftStorage[GiftId].price) == true);
         // transfer gift to recipient
         _transfer(msg.sender, recipient, GiftId);
     }
