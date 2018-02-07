@@ -6,7 +6,7 @@ import "./ERC20.sol";
 contract VirtualGift is ERC721 {
     
     // load GTO to Virtual Gift contract, to interact with GTO
-    ERC20 GTO = ERC20(0x00B2a1194Bf9758B41931512FF4706A592AC660483);
+    ERC20 GTO = ERC20(0x00C5bBaE50781Be1669306b9e001EFF57a2957b09d);
     
     // Gift data
     struct Gift {
