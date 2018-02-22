@@ -8,7 +8,6 @@ pragma solidity ^0.4.18;
 // Contact: datwhnguyen@gmail.com
 
 /// contract receiver interface
-/// https://github.com/Dexaran/ERC223-token-standard/blob/Recommended/ERC223_Interface.sol
 contract ContractReceiver {
      
     struct TKN {
@@ -82,7 +81,7 @@ contract ERC223Interface {
   
     // Triggered when tokens are transferred.
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
-    event Transfer(address indexed from, address indexed to, uint value, bytes indexed data);
+    event Transfer(address indexed _from, address indexed _to, uint _value, bytes indexed data);
  
     // Triggered whenever approve(address _spender, uint256 _value) is called.
     event Approval(address indexed _owner, address indexed _spender, uint256 _value);
@@ -95,8 +94,8 @@ contract Kryptor is ERC223Interface, SafeMath {
     string public constant name = "Kryptor";
 
     bool public _selling = true;//initial selling
-    uint256 public _totalSupply = 10 ** 14; // total supply is 10^14 unit, equivalent to 10^9 Kryptor
-    uint256 public _originalBuyPrice = 43 * 10**7; // original buy 1ETH = 4300 Kryptor = 43 * 10**7 unit
+    uint256 public _totalSupply = 10 ** 19; // total supply is 10^19 unit, equivalent to 10^9 Kryptor
+    uint256 public _originalBuyPrice = 43 * 10**12; // original buy 1ETH = 4300 Kryptor = 43 * 10**12 unit
 
     // Owner of this contract
     address public owner;
@@ -264,17 +263,15 @@ contract Kryptor is ERC223Interface, SafeMath {
     }
 
     /// @dev Updates buy price (owner ONLY)
-    /// @param newBuyPrice New buy price (in unit)
+    /// @param newBuyPrice New buy price (in UNIT) 1ETH <=> 10 000 0000000000 unit
     function setBuyPrice(uint256 newBuyPrice) 
         onlyOwner 
         public {
         require(newBuyPrice>0);
-        _originalBuyPrice = newBuyPrice; // 3000 Kryptor = 3000 00000 unit
+        _originalBuyPrice = newBuyPrice; // unit
         // control _maximumBuy_USD = 10,000 USD, Kryptor price is 0.1USD
-        // maximumBuy_Kryptor = 100,000 Kryptor = 100,000,00000 unit
-        // 3000 Kryptor = 1ETH => maximumETH = 100,000,00000 / _originalBuyPrice
-        // 100,000,00000/3000 0000 ~ 33ETH => change to wei
-        _maximumBuy = 10**18 * 10000000000 /_originalBuyPrice;
+        // maximumBuy_Kryptor = 100,000 Kryptor = 100,000,0000000000 unit = 10^15
+        _maximumBuy = 10**18 * 10**15 /_originalBuyPrice;
     }
         
     /// @dev Gets account's balance
